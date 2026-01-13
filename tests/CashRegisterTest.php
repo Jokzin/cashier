@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
 require_once __DIR__.'/../src/CashRegister.php';
@@ -20,76 +21,44 @@ class CashRegisterTest extends TestCase
     }
 
     #[Test]
-    public function amount_1(): void
+    #[DataProvider('amountsThatReturnNull')]
+    public function it_returns_null_for_unsplittable_amounts(int $amount): void
     {
-        $result = $this->cashRegister->getBillAmounts(1);
+        $result = $this->cashRegister->getBillAmounts($amount);
 
         $this->assertNull($result);
     }
 
     #[Test]
-    public function amount_6(): void
+    #[DataProvider('amountsThatCanBeDecomposed')]
+    public function it_decomposes_valid_amounts(int $amount, array $expectedBills): void
     {
-        $result = $this->cashRegister->getBillAmounts(6);
+        $result = $this->cashRegister->getBillAmounts($amount);
 
-        $this->assertSame([2 => 3], $result);
+        $this->assertSame($expectedBills, $result);
     }
 
-    #[Test]
-    public function amount_10(): void
+    public static function amountsThatReturnNull(): array
     {
-        $result = $this->cashRegister->getBillAmounts(10);
-
-        $this->assertNotNull($result);
-        $this->assertSame(10, $this->calculateSum($result));
+        return [
+            'amount 1' => [1],
+        ];
     }
 
-    #[Test]
-    public function amount_11(): void
+    public static function amountsThatCanBeDecomposed(): array
     {
-        $result = $this->cashRegister->getBillAmounts(11);
+        $maxAmount = 9007199254740991;
+        $maxAmountTens = intdiv($maxAmount, 10) - 1;
 
-        $this->assertNotNull($result);
-        $this->assertSame(11, $this->calculateSum($result));
-    }
-
-    #[Test]
-    public function amount_21(): void
-    {
-        $result = $this->cashRegister->getBillAmounts(21);
-
-        $this->assertNotNull($result);
-        $this->assertSame(21, $this->calculateSum($result));
-    }
-
-    #[Test]
-    public function amount_23(): void
-    {
-        $result = $this->cashRegister->getBillAmounts(23);
-
-        $this->assertNotNull($result);
-        $this->assertSame(23, $this->calculateSum($result));
-    }
-
-    #[Test]
-    public function amount_31(): void
-    {
-        $result = $this->cashRegister->getBillAmounts(31);
-
-        $this->assertNotNull($result);
-        $this->assertSame(31, $this->calculateSum($result));
-    }
-
-    #[Test]
-    public function amount_9007199254740991(): void
-    {
-        $result = $this->cashRegister->getBillAmounts(9007199254740991);
-
-        $this->assertNotNull($result);
-        $this->assertIsArray($result);
-        $this->assertNotEmpty($result);
-
-        $this->assertSame(9007199254740991, $this->calculateSum($result));
+        return [
+            'amount 6' => [6, [2 => 3]],
+            'amount 10' => [10, [10 => 1]],
+            'amount 11' => [11, [5 => 1, 2 => 3]],
+            'amount 21' => [21, [10 => 1, 5 => 1, 2 => 3]],
+            'amount 23' => [23, [10 => 1, 5 => 1, 2 => 4]],
+            'amount 31' => [31, [10 => 2, 5 => 1, 2 => 3]],
+            'amount max int' => [$maxAmount, [10 => $maxAmountTens, 5 => 1, 2 => 3]],
+        ];
     }
 
 
